@@ -264,5 +264,5 @@ if __name__ == '__main__':
         exit(1)
     
     print("🌐 Web版音声対話AIを起動中...")
-    print("📱 ブラウザで http://localhost:5000 にアクセスしてください")
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, debug=False, host='0.0.0.0', port=port)
