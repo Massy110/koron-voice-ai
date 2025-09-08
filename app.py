@@ -4,8 +4,7 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 from flask import Flask, render_template, request, jsonify, send_file
-from flask_socketio import SocketIO, emit
-from openai import OpenAI
+import openai
 from dotenv import load_dotenv
 from gtts import gTTS
 
@@ -13,11 +12,8 @@ from gtts import gTTS
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key_here'
-socketio = SocketIO(app, cors_allowed_origins="*")
-
-# OpenAI クライアント初期化
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# OpenAI設定
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class PersonalityType(Enum):
     """性格タイプの定義"""
@@ -198,11 +194,11 @@ def chat():
     
     try:
         # OpenAI APIで応答生成
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=chat_history,
-            max_tokens=150,
-            temperature=0.8
+        response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=chat_history,
+        max_tokens=150,
+        temperature=0.8
         )
         
         ai_reply = response.choices[0].message.content
@@ -265,4 +261,5 @@ if __name__ == '__main__':
     
     print("🌐 Web版音声対話AIを起動中...")
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, debug=False, host='0.0.0.0', port=port)
+    app.run(debug=False, host='0.0.0.0', port=port)
+
