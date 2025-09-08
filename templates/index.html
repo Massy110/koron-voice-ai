@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ころん - 音声対話AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.5s ease;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .personality-display {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+        }
+
+        .current-personality {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .personality-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .point-item {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            transition: transform 0.2s ease;
+        }
+
+        .point-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .point-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .point-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .chat-container {
+            margin-bottom: 30px;
+        }
+
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 15px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .ai-message {
+            background: #f0f0f0;
+            color: #333;
+            margin-right: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            color: #333;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+            color: white;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .text-input:focus {
+            border-color: #667eea;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .status.recording {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .status.processing {
+            background: #ffa726;
+            color: white;
+        }
+
+        .status.ready {
+            background: #66bb6a;
+            color: white;
+        }
+
+        .debug-info {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🤖 ころん</h1>
+            <p class="subtitle">あなたの言葉で私の性格が変わります</p>
+        </div>
+
+        <div class="personality-display" id="personalityDisplay">
+            <div class="current-personality" id="currentPersonality">
+                現在の性格: ニュートラル
+            </div>
+            <div class="personality-points" id="personalityPoints">
+                <div class="point-item">
+                    <div class="point-label">優しい</div>
+                    <div class="point-value" id="kindPoints">0</div>
+                </div>
+                <div class="point-item">
+                    <div class="point-label">面白い</div>
+                    <div class="point-value" id="funnyPoints">0</div>
+                </div>
+                <div class="point-item">
+                    <div class="point-label">クール</div>
+                    <div class="point-value" id="coolPoints">0</div>
+                </div>
+                <div class="point-item">
+                    <div class="point-label">怒り</div>
+                    <div class="point-value" id="angryPoints">0</div>
+                </div>
+                <div class="point-item">
+                    <div class="point-label">子供</div>
+                    <div class="point-value" id="childlikePoints">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status ready" id="status">
+            🎤 準備完了 - 音声入力またはテキスト入力で話しかけてください
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="startRecording">🎤 音声で話す</button>
+            <button class="btn btn-secondary" id="stopRecording" disabled>⏹️ 停止</button>
+            <button class="btn btn-danger" id="resetBtn">🔄 リセット</button>
+        </div>
+
+        <div class="input-area">
+            <input type="text" class="text-input" id="textInput" placeholder="テキストで入力...">
+            <button class="btn btn-primary" id="sendText">送信</button>
+        </div>
+
+        <div class="chat-container">
+            <div class="messages" id="messages"></div>
+        </div>
+
+        <div class="debug-info" id="debugInfo">
+            デバッグ情報がここに表示されます...
+        </div>
+    </div>
+
+    <script>
+        class VoiceAI {
+            constructor() {
+                this.recognition = null;
+                this.synthesis = window.speechSynthesis;
+                this.isRecording = false;
+                this.currentPersonality = 'neutral';
+                this.hasGreeted = false;
+                
+                this.initElements();
+                this.initSpeechRecognition();
+                this.bindEvents();
+                this.updateStatus('ready', '🎤 準備完了');
+                
+                // 初回挨拶
+                setTimeout(() => {
+                    this.greetUser();
+                }, 1000);
+            }
+
+            async greetUser() {
+                if (this.hasGreeted) return;
+                this.hasGreeted = true;
+                
+                const greetingMessage = "こんにちは！私の名前は「ころん」です。あなたと楽しくお話しできるのを楽しみにしています。音声で話しかけたり、テキストで入力してくださいね。終わりたいときは「バイバイ」と言ってください。それでは、よろしくお願いします！";
+                
+                this.addMessage(greetingMessage, 'ai');
+                
+                // 挨拶を音声で再生
+                try {
+                    const response = await fetch('/api/synthesize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            text: greetingMessage, 
+                            speed: 1.2 
+                        })
+                    });
+
+                    if (response.ok) {
+                        const audioBlob = await response.blob();
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        const audio = new Audio(audioUrl);
+                        
+                        audio.onended = () => {
+                            URL.revokeObjectURL(audioUrl);
+                        };
+                        
+                        await audio.play();
+                    } else {
+                        // フォールバックとしてブラウザ音声を使用
+                        this.speakText(greetingMessage);
+                    }
+                } catch (error) {
+                    console.log('挨拶の音声再生をスキップしました');
+                }
+            }
+
+            initElements() {
+                this.elements = {
+                    status: document.getElementById('status'),
+                    startBtn: document.getElementById('startRecording'),
+                    stopBtn: document.getElementById('stopRecording'),
+                    resetBtn: document.getElementById('resetBtn'),
+                    textInput: document.getElementById('textInput'),
+                    sendBtn: document.getElementById('sendText'),
+                    messages: document.getElementById('messages'),
+                    debugInfo: document.getElementById('debugInfo'),
+                    personalityDisplay: document.getElementById('personalityDisplay'),
+                    currentPersonality: document.getElementById('currentPersonality'),
+                    points: {
+                        kind: document.getElementById('kindPoints'),
+                        funny: document.getElementById('funnyPoints'),
+                        cool: document.getElementById('coolPoints'),
+                        angry: document.getElementById('angryPoints'),
+                        childlike: document.getElementById('childlikePoints')
+                    }
+                };
+            }
+
+            initSpeechRecognition() {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    this.recognition = new SpeechRecognition();
+                    this.recognition.lang = 'ja-JP';
+                    this.recognition.continuous = false;
+                    this.recognition.interimResults = false;
+
+                    this.recognition.onstart = () => {
+                        this.isRecording = true;
+                        this.updateStatus('recording', '🎤 録音中... 話してください');
+                        this.elements.startBtn.disabled = true;
+                        this.elements.stopBtn.disabled = false;
+                    };
+
+                    this.recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        this.processMessage(transcript);
+                    };
+
+                    this.recognition.onerror = (event) => {
+                        this.updateStatus('ready', '❌ 音声認識エラー: ' + event.error);
+                        this.resetRecording();
+                    };
+
+                    this.recognition.onend = () => {
+                        this.resetRecording();
+                    };
+                } else {
+                    this.updateStatus('ready', '⚠️ 音声認識はサポートされていません');
+                    this.elements.startBtn.disabled = true;
+                }
+            }
+
+            bindEvents() {
+                this.elements.startBtn.addEventListener('click', () => this.startRecording());
+                this.elements.stopBtn.addEventListener('click', () => this.stopRecording());
+                this.elements.resetBtn.addEventListener('click', () => this.resetPersonality());
+                this.elements.sendBtn.addEventListener('click', () => this.sendTextMessage());
+                this.elements.textInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendTextMessage();
+                });
+            }
+
+            startRecording() {
+                if (this.recognition && !this.isRecording) {
+                    this.recognition.start();
+                }
+            }
+
+            stopRecording() {
+                if (this.recognition && this.isRecording) {
+                    this.recognition.stop();
+                }
+            }
+
+            resetRecording() {
+                this.isRecording = false;
+                this.elements.startBtn.disabled = false;
+                this.elements.stopBtn.disabled = true;
+                this.updateStatus('ready', '🎤 準備完了');
+            }
+
+            sendTextMessage() {
+                const message = this.elements.textInput.value.trim();
+                if (message) {
+                    this.elements.textInput.value = '';
+                    this.processMessage(message);
+                }
+            }
+
+            async processMessage(message) {
+                this.updateStatus('processing', '🤔 処理中...');
+                this.addMessage(message, 'user');
+
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message: message })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    this.addMessage(data.reply, 'ai');
+                    this.updatePersonality(data.personality);
+                    this.updateDebugInfo(data.debug);
+                    
+                    // サーバー側で音声生成
+                    await this.speakWithServer(data.reply, data.personality.voice_speed);
+
+                } catch (error) {
+                    this.addMessage(`エラー: ${error.message}`, 'ai');
+                    this.updateDebugInfo(['エラーが発生しました: ' + error.message]);
+                }
+
+                this.updateStatus('ready', '🎤 準備完了');
+            }
+
+            async speakWithServer(text, speed) {
+                try {
+                    const response = await fetch('/api/synthesize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            text: text, 
+                            speed: speed 
+                        })
+                    });
+
+                    if (response.ok) {
+                        const audioBlob = await response.blob();
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        const audio = new Audio(audioUrl);
+                        
+                        audio.onended = () => {
+                            URL.revokeObjectURL(audioUrl);
+                        };
+                        
+                        await audio.play();
+                    } else {
+                        console.error('音声生成エラー:', response.statusText);
+                        // フォールバックとしてブラウザ音声を使用
+                        this.speakText(text);
+                    }
+                } catch (error) {
+                    console.error('音声再生エラー:', error);
+                    // フォールバックとしてブラウザ音声を使用
+                    this.speakText(text);
+                }
+            }
+
+            addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message`;
+                messageDiv.textContent = text;
+                this.elements.messages.appendChild(messageDiv);
+                this.elements.messages.scrollTop = this.elements.messages.scrollHeight;
+            }
+
+            updatePersonality(personalityData) {
+                const personalityNames = {
+                    'kind': '優しい',
+                    'funny': '面白い',
+                    'cool': 'クール',
+                    'angry': '怒り',
+                    'childlike': '子供っぽい',
+                    'neutral': 'ニュートラル'
+                };
+
+                this.currentPersonality = personalityData.current_type;
+                this.elements.currentPersonality.textContent = 
+                    `現在の性格: ${personalityNames[personalityData.current_type]}`;
+
+                // 背景色を変更
+                document.body.style.background = 
+                    `linear-gradient(135deg, ${personalityData.current_color}, #764ba2)`;
+                
+                this.elements.personalityDisplay.style.backgroundColor = 
+                    personalityData.current_color + '40';
+
+                // ポイントを更新
+                Object.keys(personalityData.points).forEach(type => {
+                    if (this.elements.points[type]) {
+                        this.elements.points[type].textContent = personalityData.points[type];
+                    }
+                });
+            }
+
+            updateDebugInfo(debugArray) {
+                this.elements.debugInfo.innerHTML = debugArray.map(info => 
+                    `<div>${new Date().toLocaleTimeString()}: ${info}</div>`
+                ).join('');
+                this.elements.debugInfo.scrollTop = this.elements.debugInfo.scrollHeight;
+            }
+
+            updateStatus(type, message) {
+                this.elements.status.className = `status ${type}`;
+                this.elements.status.textContent = message;
+                
+                if (type === 'processing') {
+                    this.elements.status.classList.add('pulse');
+                } else {
+                    this.elements.status.classList.remove('pulse');
+                }
+            }
+
+            speakText(text) {
+                if (this.synthesis) {
+                    this.synthesis.cancel(); // 前の音声を停止
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'ja-JP';
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    this.synthesis.speak(utterance);
+                }
+            }
+
+            async resetPersonality() {
+                try {
+                    const response = await fetch('/api/reset', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    const data = await response.json();
+                    this.updatePersonality(data.personality);
+                    this.elements.messages.innerHTML = '';
+                    this.updateDebugInfo(['性格ポイントをリセットしました']);
+                    this.updateStatus('ready', '🔄 リセット完了');
+
+                } catch (error) {
+                    this.updateStatus('ready', '❌ リセットエラー: ' + error.message);
+                }
+            }
+        }
+
+        // アプリケーション開始
+        document.addEventListener('DOMContentLoaded', () => {
+            new VoiceAI();
+        });
+    </script>
+</body>
+</html>
